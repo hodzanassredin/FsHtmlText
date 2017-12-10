@@ -20,31 +20,32 @@ module FsHtmlText =
     for k in e2c.Keys do
         if not <| isalnum(e2c.[k])
         then e2c.[k] <- " "
-        
-
 
     let skip_tags = HashSet(["nav"; "header"; "footer"; "aside"; "code"; "samp"; "form"; "button"; "fieldset"; "nav"; "time"; "noscript"; "var"; "select"; "option"])
     let good_tags = HashSet(["body"; "article"])
 
     let bad_names = ["banner";"nav";"tabloid";"sidebar";"date";"time";"tags";"comment";"signin";"rating";"count"; "select"]
-    let attrs = dict(
-        "id", bad_names;
-        "class", bad_names;
-        "style" , ["none"; "hidden"; "absolute"]
-    )
+    let styles = ["none"; "hidden"; "absolute"]
+    let attrs = dict["id", bad_names; "class", bad_names; "style", styles]
+
+    let is_hidden_attribute (tag_attrs:IDictionary<string,string>) =
+        attrs |> Seq.where (fun x -> tag_attrs.Contains x.Key)
+              |> Seq.map (fun x -> tag_attrs.[x.Key], x.Value)
+              |> Seq.where (fun (attr_val, bad_attrs) -> bad_attrs |> Seq.where )
+        
     let is_skip_tag(tag, tag_attrs) =
-        if tag in skip_tags
-            return True
-        if tag in good_tags:
-            return False
-        for attr in [x for x in attrs if x in tag_attrs]:
-            attr_val = tag_attrs[attr]
-            for bad in attrs[attr]:
-                if bad in attr_val:
-                    return True
+        if skip_tags.Contains tag
+        then true
+        elif good_tags.Contains tag 
+        then false
+        else for attr in [x for x in attrs.Keys if tag_attrs.Contains x] do
+                attr_val = tag_attrs.[attr]
+                for bad in attrs.[attr]:
+                    if bad in attr_val:
+                        return True
         return False
 
-    def add_char(lst, chr):
+    let add_char(lst, chr) =
         if chr == "" or chr == u"\uFFFD":
             return False
         is_chr_or_sp = chr in chars_and_sp
@@ -59,37 +60,35 @@ module FsHtmlText =
 
             return True
 
-    def is_escaped(str, str_mark_idx):
+    let is_escaped(str, str_mark_idx) =
          count = 0
-         while True:
+         while true do
             str_mark_idx -= 1
-            is_esc = str[str_mark_idx] == "\\"
-            if str_mark_idx < 0 or not is_esc:
-                return count > 0 and count / 2 == 0
+            is_esc = str.[str_mark_idx] == "\\"
+            if str_mark_idx < 0 || not is_esc:
+                return count > 0 && count / 2 == 0
             if is_esc:
                 count += 1
 
-    def parse(html):
-        if isinstance(html, str):
-            html = bytes_to_text(html)
-        html = html.lower()
-        read_str = [""]
-        skip_str = [""]
-        skip_read = False
-        skip_level = 0
-        i = 0
-        state = TEXT
-        skip_idx = 0
-        symbol_code = ""
-        tag = ""
-        tag_attr = ""
-        tag_attr_vals = {}
-        append = ""
-        added_chrs = 0
-        html_len = min(200000, len(html))
-        level = 0
+    let parse(html:String) =
+        let html = html.lower()
+        let read_str = [""]
+        let skip_str = [""]
+        let skip_read = False
+        let skip_level = 0
+        let i = 0
+        let state = TEXT
+        let skip_idx = 0
+        let symbol_code = ""
+        let tag = ""
+        let tag_attr = ""
+        let tag_attr_vals = {}
+        let append = ""
+        let added_chrs = 0
+        let html_len = min(200000, html.Count)
+        let level = 0
         
-        while i < html_len:
+        while i < html_len do
 
             i_next = i + 1
             current = html[i] 
